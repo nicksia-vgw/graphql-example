@@ -20,18 +20,18 @@ const typeDefs = gql`
     }
 	
 	type User {
+		id: ID
 		friends: [User]
 		apples: String
 	}
 `;
 
 interface User {
-	friends: User[],
 	apples: String,
 }
 
 const users:User[] = [
-	{friends: [], apples: ""}
+	{apples: ""}
 ];
 
 const resolvers = {
@@ -40,20 +40,27 @@ const resolvers = {
 	},
 	Mutation: {
 		addFriend: async () => {
-			await users[0].friends.push({friends: [], apples: ""});
+			await users.push({ apples: ""});
 			pubsub.publish("user_updated", { userUpdated: users[0] });
 			return users[0];
 		},
 		giveApple: async () => {
-			const user = users[Math.floor(Math.random() * Math.floor(users.length))];
-			user.apples += "o";
-			pubsub.publish("user_updated", { userUpdated: users[0] });
+			const randomIndex = Math.floor(Math.random() * users.length);
+			const randomUser = users[randomIndex];
+			randomUser.apples += "o";
+
+			await pubsub.publish("user_updated", { userUpdated: users[0] });
 			return users[0];
 		}
 	},
 	Subscription: {
 		userUpdated: {
 			subscribe: () => pubsub.asyncIterator(["user_updated"])
+		}
+	},
+	User: {
+		async friends(user: User) {
+			return users;
 		}
 	}
 };
